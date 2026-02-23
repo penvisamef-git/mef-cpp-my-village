@@ -29,8 +29,8 @@ const index = (prop) => {
   // const app_AreaData_FilterArea = require("../mobile/area_data/filter_area_by_name/filter_area_by_name.route");
   // const app_AreaData_Geopgraphy = require("../mobile/area_data/geography/count.route");
   //const app_AreaData_PeopleCount = require("../mobile/area_data/people/count.route");
-  //const action = require("../admin/dashboard/action/action.route");
-  // const ChallengeType = require("../admin/dashboard/challenge/type/type.route");
+  const action = require("../admin/dashboard/action/action.route");
+  const ChallengeType = require("../admin/dashboard/challenge/type/type.route");
   const ChallengeProblem = require("../admin/dashboard/challenge/problem/problem.route");
   const GenerateQRCodeLogin = require("../qrcode/authQRCodeLogin.route");
   const Temp = require("../../temp/temp.route");
@@ -61,8 +61,8 @@ const index = (prop) => {
   // app_AreaData_FilterArea(prop);
   //app_AreaData_Geopgraphy(prop);
   //app_AreaData_PeopleCount(prop);
-  // action(prop);
-  // ChallengeType(prop);
+  action(prop);
+  ChallengeType(prop);
   ChallengeProblem(prop);
   GenerateQRCodeLogin(prop);
   Temp(prop);
