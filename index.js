@@ -17,6 +17,12 @@ app.get("/about", (req, res) => {
   });
 });
 
+const testRoute = require("./src/test");
+const prop = {
+    app :app
+}
+testRoute(prop);
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
