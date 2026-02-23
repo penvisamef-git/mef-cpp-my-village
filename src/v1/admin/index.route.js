@@ -25,8 +25,8 @@ const index = (prop) => {
   const masterData_PartyCount = require("./dashboard/master_data/party/count/count.route");
   const areaKhmer = require("../../area/area.route");
   const areaManagement_Peopel = require("./dashboard/area_management/party_member/party_member.route");
-  const app_AreaData_PartyMember_Count = require("../mobile/area_data/party/count.route");
-  const app_AreaData_FilterArea = require("../mobile/area_data/filter_area_by_name/filter_area_by_name.route");
+  // const app_AreaData_PartyMember_Count = require("../mobile/area_data/party/count.route");
+  // const app_AreaData_FilterArea = require("../mobile/area_data/filter_area_by_name/filter_area_by_name.route");
  // const app_AreaData_Geopgraphy = require("../mobile/area_data/geography/count.route");
   //const app_AreaData_PeopleCount = require("../mobile/area_data/people/count.route");
   //const action = require("../admin/dashboard/action/action.route");
@@ -57,8 +57,8 @@ const index = (prop) => {
   masterData_AreaPin_GetAll(prop);
   masterData_PartyCount(prop);
   areaManagement_Peopel(prop);
-  app_AreaData_PartyMember_Count(prop);
-  app_AreaData_FilterArea(prop);
+  // app_AreaData_PartyMember_Count(prop);
+  // app_AreaData_FilterArea(prop);
   //app_AreaData_Geopgraphy(prop);
   //app_AreaData_PeopleCount(prop);
   // action(prop);
