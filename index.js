@@ -8,7 +8,7 @@ app.use(express.json());
 
 // Routes
 app.get("/", (req, res) => {
-  res.send("Hello World 🌍");
+  res.send("Hello World ----- * ------");
 });
 
 app.get("/about", (req, res) => {
@@ -17,11 +17,11 @@ app.get("/about", (req, res) => {
   });
 });
 
-const testRoute = require("./src/test");
+
 const prop = {
     app :app
 }
-testRoute(prop);
+
 
 // Start Server
 app.listen(PORT, () => {
