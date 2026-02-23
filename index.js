@@ -73,15 +73,15 @@ const prop = {
 const adminAPI_V1 = require("./src/v1/admin/index.route");
 adminAPI_V1(prop);
 
-app.listen(8085, "0.0.0.0", () => {
-  console.log(`Server is running on ${8085}`);
-});
+// app.listen(8085, "0.0.0.0", () => {
+//   console.log(`Server is running on ${8085}`);
+// });
 // 🧼 Gracefully handle shutdown
-process.on("SIGINT", async () => {
-  await mongoose.connection.close();
-  console.log("🛑 MongoDB disconnected cleanly");
-  process.exit(0);
-});
+// process.on("SIGINT", async () => {
+//   await mongoose.connection.close();
+//   console.log("🛑 MongoDB disconnected cleanly");
+//   process.exit(0);
+// });
 
 
 
@@ -91,6 +91,6 @@ process.on("SIGINT", async () => {
 
 
 // // Start Server
-// app.listen(PORT, () => {
-//   console.log(`Server running on http://localhost:${PORT}`);
-// });
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
