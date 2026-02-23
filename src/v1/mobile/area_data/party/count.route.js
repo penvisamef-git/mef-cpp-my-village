@@ -168,139 +168,141 @@ const route = (prop) => {
     prop.jwt_auth,
     prop.request_user,
     async (req, res) => {
-      const { province_id, district_id, commune_id, village_id } = req.query;
-      let matchFilter = {};
+      try {
+        const { province_id, district_id, commune_id, village_id } = req.query;
 
-      if (province_id) {
-        if (!mongoose.Types.ObjectId.isValid(province_id)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid province_id!",
-          });
+        // Build query conditions
+        let queryConditions = {
+          deleted: false,
+          is_alived: true,
+        };
+
+        // Add location filters based on hierarchy (only one will be applied)
+        if (village_id) {
+          if (!mongoose.Types.ObjectId.isValid(village_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid village_id!",
+            });
+          }
+          queryConditions["village_id"] = new mongoose.Types.ObjectId(
+            village_id,
+          );
+        } else if (commune_id) {
+          if (!mongoose.Types.ObjectId.isValid(commune_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid commune_id!",
+            });
+          }
+          queryConditions["commune_id"] = new mongoose.Types.ObjectId(
+            commune_id,
+          );
+        } else if (district_id) {
+          if (!mongoose.Types.ObjectId.isValid(district_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid district_id!",
+            });
+          }
+          queryConditions["district_id"] = new mongoose.Types.ObjectId(
+            district_id,
+          );
+        } else if (province_id) {
+          if (!mongoose.Types.ObjectId.isValid(province_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid province_id!",
+            });
+          }
+          queryConditions["province_id"] = new mongoose.Types.ObjectId(
+            province_id,
+          );
         }
-        matchFilter["province_id"] = new mongoose.Types.ObjectId(province_id);
-      }
 
-      if (district_id) {
-        if (!mongoose.Types.ObjectId.isValid(district_id)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid district_id!",
-          });
-        }
-        matchFilter["district_id"] = new mongoose.Types.ObjectId(district_id);
-      }
+        // Get all data with the correct query conditions
+        const resultAll = await modelPeople.find(queryConditions);
 
-      if (commune_id) {
-        if (!mongoose.Types.ObjectId.isValid(commune_id)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid commune_id!",
-          });
-        }
-        matchFilter["commune_id"] = new mongoose.Types.ObjectId(commune_id);
-      }
+        // Filter data from the resultAll array
+        // Alive people (already filtered by is_alived: true in query)
+        const alivePeople = resultAll; // Since we already filtered is_alived: true
 
-      if (village_id) {
-        if (!mongoose.Types.ObjectId.isValid(village_id)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid village_id!",
-          });
-        }
-        matchFilter["village_id"] = new mongoose.Types.ObjectId(village_id);
-      }
+        // Gender counts from alive people
+        const resultMale = alivePeople.filter(
+          (person) => person.sex === "male",
+        );
+        const resultFemale = alivePeople.filter(
+          (person) => person.sex === "female",
+        );
 
-      // Get all data once
-      const resultAll = await modelPeople.find({
-        deleted: false,
-        is_alived: true,
-      });
+        // Calculate gender percentages
+        const totalAlive = resultMale.length + resultFemale.length;
+        const genderMale =
+          totalAlive > 0 ? (resultMale.length * 100) / totalAlive : 0;
+        const genderFemale =
+          totalAlive > 0 ? (resultFemale.length * 100) / totalAlive : 0;
 
-      //==========================
-      // Filter data from the single resultAll array
+        // Member Count (CPP members vs non-members)
+        const cppMembers = alivePeople.filter(
+          (person) => person.is_member_cpp === true,
+        );
+        const nonMembers = alivePeople.filter(
+          (person) => person.is_member_cpp === false,
+        );
 
-      // Alive people
-      const alivePeople = resultAll.filter(
-        (person) => person.is_alived === true,
-      );
+        const memberPer =
+          totalAlive > 0 ? (cppMembers.length * 100) / totalAlive : 0;
+        const notMemberPer =
+          totalAlive > 0 ? (nonMembers.length * 100) / totalAlive : 0;
 
-      // Gender counts from alive people
-      const resultMale = alivePeople.filter((person) => person.sex === "male");
-      const resultFemale = alivePeople.filter(
-        (person) => person.sex === "female",
-      );
+        // Get dead people (separate query or filter from all data)
+        // Since we filtered is_alived: true in the main query, we need a separate query for dead
+        const deadQuery = { ...queryConditions, is_alived: false };
+        const dead = await modelPeople.find(deadQuery);
 
-      // Calculate gender percentages
-      const totalAlive = resultMale.length + resultFemale.length;
-      const genderMale =
-        totalAlive > 0 ? (resultMale.length * 100) / totalAlive : 0;
-      const genderFemale =
-        totalAlive > 0 ? (resultFemale.length * 100) / totalAlive : 0;
+        // Count Unique Families
+        const uniqueFamilyCount = new Set(
+          resultAll
+            .map((row) => row.family_system_number)
+            .filter((familyId) => familyId), // Remove null/undefined
+        ).size;
 
-      //==========================
-      // Member Count
-      const populationOnly = alivePeople.filter(
-        (person) => person.is_member_cpp === false,
-      );
-      const notMemberPer =
-        totalAlive > 0 ? (populationOnly.length * 100) / totalAlive : 0;
-      const memberPer = totalAlive > 0 ? 100 - notMemberPer : 0;
-
-      // =======================
-      // Dead
-      const dead = resultAll.filter((person) => person.is_alived === false);
-
-      // ====================
-      // Count Family - More efficient
-      const uniqueFamilyCount = new Set(
-        resultAll
-          .map((row) => row.family_system_number)
-          .filter((familyId) => familyId), // Remove null/undefined
-      ).size;
-
-      // ====================
-      // Apply matchFilter if you have one
-      // If you have a matchFilter object with conditions, you can filter further:
-      let filteredData = resultAll;
-      if (matchFilter && Object.keys(matchFilter).length > 0) {
-        filteredData = resultAll.filter((person) => {
-          return Object.entries(matchFilter).every(([key, value]) => {
-            return person[key] === value;
-          });
+        // Send the response
+        res.json({
+          success: true,
+          data: {
+            total_member_and_population: totalAlive,
+            member_and_not: {
+              member: {
+                count: cppMembers.length,
+                percentage: parseFloat(memberPer.toFixed(2)),
+              },
+              not_member: {
+                count: nonMembers.length,
+                percentage: parseFloat(notMemberPer.toFixed(2)),
+              },
+            },
+            male: {
+              count: resultMale.length,
+              percentage: parseFloat(genderMale.toFixed(2)),
+            },
+            female: {
+              count: resultFemale.length,
+              percentage: parseFloat(genderFemale.toFixed(2)),
+            },
+            family_count: uniqueFamilyCount,
+            dead: dead.length,
+            total_origin_records: resultAll.length,
+          },
         });
-
-        // Recalculate with filtered data if needed
-        // (You might need to adjust the logic above if matchFilter is required)
+      } catch (error) {
+        console.error("Error in calculation API:", error);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+          error: error.message,
+        });
       }
-
-      res.send({
-        success: true,
-        data: {
-          total_member_and_population: totalAlive,
-          member_and_not: {
-            member: {
-              count: totalAlive - populationOnly.length,
-              percentage: parseFloat(memberPer.toFixed(2)),
-            },
-            not_member: {
-              count: populationOnly.length,
-              percentage: parseFloat(notMemberPer.toFixed(2)),
-            },
-          },
-          male: {
-            count: resultMale.length,
-            percentage: parseFloat(genderMale.toFixed(2)),
-          },
-          female: {
-            count: resultFemale.length,
-            percentage: parseFloat(genderFemale.toFixed(2)),
-          },
-          family_count: uniqueFamilyCount,
-          dead: dead.length,
-          total_origin_records: resultAll.length, // Added: total documents in collection
-        },
-      });
     },
   );
 };
