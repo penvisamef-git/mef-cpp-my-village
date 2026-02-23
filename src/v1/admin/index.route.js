@@ -31,9 +31,9 @@ const index = (prop) => {
   //const app_AreaData_PeopleCount = require("../mobile/area_data/people/count.route");
   //const action = require("../admin/dashboard/action/action.route");
   // const ChallengeType = require("../admin/dashboard/challenge/type/type.route");
-  // const ChallengeProblem = require("../admin/dashboard/challenge/problem/problem.route");
-  // const GenerateQRCodeLogin = require("../qrcode/authQRCodeLogin.route");
-  // const Temp = require("../../temp/temp.route");
+  const ChallengeProblem = require("../admin/dashboard/challenge/problem/problem.route");
+  const GenerateQRCodeLogin = require("../qrcode/authQRCodeLogin.route");
+  const Temp = require("../../temp/temp.route");
   // Implement ==========================
   authRoute(prop); // Auth
   sessionRoute(prop); // Auth
@@ -63,9 +63,9 @@ const index = (prop) => {
   //app_AreaData_PeopleCount(prop);
   // action(prop);
   // ChallengeType(prop);
-  // ChallengeProblem(prop);
-  // GenerateQRCodeLogin(prop);
-  // Temp(prop);
+  ChallengeProblem(prop);
+  GenerateQRCodeLogin(prop);
+  Temp(prop);
 };
 
 module.exports = index;
