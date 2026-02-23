@@ -61,7 +61,7 @@ const index = (prop) => {
   app_AreaData_FilterArea(prop);
   app_AreaData_Geopgraphy(prop);
   app_AreaData_PeopleCount(prop);
-  action(prop);
+  // action(prop);
   // ChallengeType(prop);
   // ChallengeProblem(prop);
   // GenerateQRCodeLogin(prop);
