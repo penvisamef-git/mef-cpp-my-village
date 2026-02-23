@@ -32,31 +32,19 @@ app.use(express.urlencoded({ extended: true }));
 //   })
 // );
 
-//  ================= Connection =================
-// (connectDB(),
-//   app.get("/", (req, res) => {
-//     api_auth(req, res, () => {
-//       res.send({
-//         success: true,
-//         message: "API Connected",
-//       });
-//     });
-//   }));
+// ================= Connection =================
+(connectDB(),
+  app.get("/", (req, res) => {
+    api_auth(req, res, () => {
+      res.send({
+        success: true,
+        message: "API Connected",
+      });
+    });
+  }));
 
 
 
-
-
-// Routes
-app.get("/", (req, res) => {
-  res.send("Hello World ----- 888888888 ------");
-});
-
-app.get("/about", (req, res) => {
-  res.json({
-    message: "This is About Page",
-  });
-});
 
 
 
@@ -83,11 +71,6 @@ const prop = {
 //   process.exit(0);
 // });
 
-
-
-// const prop = {
-//     app :app
-// }
 
 
 // // Start Server
