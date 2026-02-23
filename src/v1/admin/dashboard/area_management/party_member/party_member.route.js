@@ -24,436 +24,436 @@ const {
 } = require("../../../../../util/request/crud");
 
 const route = (prop) => {
-  // // **************** Declaration ****************
-  // const urlAPI = `/${prop.main_route}/${baseRoute}`;
-  // const tital_Toast = "គ្រប់គ្រងតំបន់ - ប្រជាពលរដ្ឋ";
-  // const requestRequired = [
-  //   { key: "firstname_kh", label: "នាម (firstname_kh)" },
-  //   { key: "lastname_kh", label: "ក្តោនាម (lastname_kh)" },
+  // **************** Declaration ****************
+  const urlAPI = `/${prop.main_route}/${baseRoute}`;
+  const tital_Toast = "គ្រប់គ្រងតំបន់ - ប្រជាពលរដ្ឋ";
+  const requestRequired = [
+    { key: "firstname_kh", label: "នាម (firstname_kh)" },
+    { key: "lastname_kh", label: "ក្តោនាម (lastname_kh)" },
 
-  //   {
-  //     key: "village_id",
-  //     label: "ក្រុម/ឃុំ (village_id)",
-  //   },
-  // ];
+    {
+      key: "village_id",
+      label: "ក្រុម/ឃុំ (village_id)",
+    },
+  ];
 
-  // const fs = require("fs");
-  // const path = require("path");
-  // const multer = require("multer");
-  // const cloudinary = require("cloudinary").v2;
+  const fs = require("fs");
+  const path = require("path");
+  const multer = require("multer");
+  const cloudinary = require("cloudinary").v2;
 
-  // // Create uploads directory if it doesn't exist
-  // const uploadsDir = "uploads";
-  // if (!fs.existsSync(uploadsDir)) {
-  //   fs.mkdirSync(uploadsDir, { recursive: true });
-  //   console.log(`✅ Created directory: ${uploadsDir}`);
-  // }
+  // Create uploads directory if it doesn't exist
+  const uploadsDir = "uploads";
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log(`✅ Created directory: ${uploadsDir}`);
+  }
 
-  // // Temporary storage folder
-  // const storage = multer.diskStorage({
-  //   destination: function (req, file, cb) {
-  //     cb(null, "uploads/");
-  //   },
-  //   filename: function (req, file, cb) {
-  //     cb(null, Date.now() + "-" + file.originalname);
-  //   },
-  // });
+  // Temporary storage folder
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "uploads/");
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + "-" + file.originalname);
+    },
+  });
 
-  // const fileFilter = (req, file, cb) => {
-  //   const allowedTypes = /jpeg|jpg|png/;
-  //   const mimetype = allowedTypes.test(file.mimetype);
-  //   const extname = allowedTypes.test(file.originalname.toLowerCase());
+  const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png/;
+    const mimetype = allowedTypes.test(file.mimetype);
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
 
-  //   if (mimetype && extname) {
-  //     return cb(null, true);
-  //   }
-  //   cb(new Error("Only .png, .jpg and .jpeg format allowed!"));
-  // };
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only .png, .jpg and .jpeg format allowed!"));
+  };
 
-  // const upload = multer({
-  //   storage: storage,
-  //   fileFilter: fileFilter,
-  //   limits: {
-  //     files: 11, // max 11 files (1 profile + 10 others)
-  //     fileSize: 10 * 1024 * 1024, // max 10 MB per file
-  //   },
-  // });
+  const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+      files: 11, // max 11 files (1 profile + 10 others)
+      fileSize: 10 * 1024 * 1024, // max 10 MB per file
+    },
+  });
 
-  // prop.app.post(
-  //   `${urlAPI}`,
-  //   prop.api_auth,
-  //   prop.jwt_auth,
-  //   prop.request_user,
+  prop.app.post(
+    `${urlAPI}`,
+    prop.api_auth,
+    prop.jwt_auth,
+    prop.request_user,
 
-  //   // Multer handler for profile + other images
-  //   (req, res, next) => {
-  //     upload.fields([
-  //       { name: "image_profile", maxCount: 1 },
-  //       { name: "image_other", maxCount: 10 },
-  //     ])(req, res, (err) => {
-  //       if (err) {
-  //         return res.status(400).json({ status: false, message: err.message });
-  //       }
-  //       next();
-  //     });
-  //   },
+    // Multer handler for profile + other images
+    (req, res, next) => {
+      upload.fields([
+        { name: "image_profile", maxCount: 1 },
+        { name: "image_other", maxCount: 10 },
+      ])(req, res, (err) => {
+        if (err) {
+          return res.status(400).json({ status: false, message: err.message });
+        }
+        next();
+      });
+    },
 
-  //   async (req, res) => {
-  //     try {
-  //       // console.log("📋 Body keys:", Object.keys(req.body));
-  //       // console.log("📁 Files:", req.files);
+    async (req, res) => {
+      try {
+        // console.log("📋 Body keys:", Object.keys(req.body));
+        // console.log("📁 Files:", req.files);
 
-  //       var data = ({
-  //         is_alived,
-  //         firstname_en,
-  //         lastname_en,
-  //         firstname_kh,
-  //         lastname_kh,
-  //         sex,
-  //         dob,
-  //         contact,
-  //         matual_status,
-  //         address,
-  //         education_level_id,
-  //         job_name_id,
-  //         family_number,
-  //         family_system_number,
-  //         is_member_cpp,
-  //         date_joined_party,
-  //         party_leader,
-  //         party_sub_leader,
-  //         is_have_party_card_member,
-  //         party_card_member,
-  //         role_in_party_id,
-  //         village_id,
-  //         google_map_house_location,
-  //         note,
-  //         id_card_number,
-  //       } = req.body);
+        var data = ({
+          is_alived,
+          firstname_en,
+          lastname_en,
+          firstname_kh,
+          lastname_kh,
+          sex,
+          dob,
+          contact,
+          matual_status,
+          address,
+          education_level_id,
+          job_name_id,
+          family_number,
+          family_system_number,
+          is_member_cpp,
+          date_joined_party,
+          party_leader,
+          party_sub_leader,
+          is_have_party_card_member,
+          party_card_member,
+          role_in_party_id,
+          village_id,
+          google_map_house_location,
+          note,
+          id_card_number,
+        } = req.body);
 
-  //       //  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //       // Check Null
-  //       if (data.role_in_party_id === "") {
-  //         data.role_in_party_id = null;
-  //       }
+        //  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        // Check Null
+        if (data.role_in_party_id === "") {
+          data.role_in_party_id = null;
+        }
 
-  //       if (!data.google_map_house_location) {
-  //         data.google_map_house_location = null;
-  //       }
+        if (!data.google_map_house_location) {
+          data.google_map_house_location = null;
+        }
 
-  //       // Handle uploaded images - OPTIONAL
-  //       const filesProfile = req.files["image_profile"]
-  //         ? req.files["image_profile"][0]
-  //         : null;
+        // Handle uploaded images - OPTIONAL
+        const filesProfile = req.files["image_profile"]
+          ? req.files["image_profile"][0]
+          : null;
 
-  //       const filesOther = req.files["image_other"] || [];
+        const filesOther = req.files["image_other"] || [];
 
-  //       // ---- TOTAL SIZE CHECK (max 15MB) ----
-  //       const totalSize =
-  //         (filesProfile ? filesProfile.size : 0) +
-  //         filesOther.reduce((acc, file) => acc + file.size, 0);
+        // ---- TOTAL SIZE CHECK (max 15MB) ----
+        const totalSize =
+          (filesProfile ? filesProfile.size : 0) +
+          filesOther.reduce((acc, file) => acc + file.size, 0);
 
-  //       if (totalSize > 15 * 1024 * 1024) {
-  //         return res.status(400).json({
-  //           status: false,
-  //           message: "Total size of all images must not exceed 15 MB",
-  //         });
-  //       }
+        if (totalSize > 15 * 1024 * 1024) {
+          return res.status(400).json({
+            status: false,
+            message: "Total size of all images must not exceed 15 MB",
+          });
+        }
 
-  //       // -------------------------------
-  //       // Upload to Cloudinary: PROFILE IMAGE
-  //       // -------------------------------
-  //       let profileImageURL = null;
+        // -------------------------------
+        // Upload to Cloudinary: PROFILE IMAGE
+        // -------------------------------
+        let profileImageURL = null;
 
-  //       if (filesProfile) {
-  //         // console.log("📁 Profile file path:", filesProfile.path);
-  //         // console.log(
-  //         //   "📁 Profile file exists:",
-  //         //   fs.existsSync(filesProfile.path),
-  //         // );
+        if (filesProfile) {
+          // console.log("📁 Profile file path:", filesProfile.path);
+          // console.log(
+          //   "📁 Profile file exists:",
+          //   fs.existsSync(filesProfile.path),
+          // );
 
-  //         // Check if file exists before uploading
-  //         if (!fs.existsSync(filesProfile.path)) {
-  //           console.error("❌ Profile file not found:", filesProfile.path);
-  //           return res.status(400).json({
-  //             status: false,
-  //             message: "Profile image file not found after upload",
-  //           });
-  //         }
+          // Check if file exists before uploading
+          if (!fs.existsSync(filesProfile.path)) {
+            console.error("❌ Profile file not found:", filesProfile.path);
+            return res.status(400).json({
+              status: false,
+              message: "Profile image file not found after upload",
+            });
+          }
 
-  //         try {
-  //           const uploadResult = await cloudinary.uploader.upload(
-  //             filesProfile.path,
-  //             { folder: "population/profile" },
-  //           );
-  //           profileImageURL = uploadResult.secure_url;
-  //           console.log(
-  //             "✅ Profile image uploaded to Cloudinary:",
-  //             profileImageURL,
-  //           );
+          try {
+            const uploadResult = await cloudinary.uploader.upload(
+              filesProfile.path,
+              { folder: "population/profile" },
+            );
+            profileImageURL = uploadResult.secure_url;
+            console.log(
+              "✅ Profile image uploaded to Cloudinary:",
+              profileImageURL,
+            );
 
-  //           // Save to database
-  //           data.image_profile = profileImageURL;
+            // Save to database
+            data.image_profile = profileImageURL;
 
-  //           // Clean up local file
-  //           fs.unlinkSync(filesProfile.path);
-  //           console.log("✅ Local profile file cleaned up");
-  //         } catch (cloudinaryError) {
-  //           console.error("❌ Cloudinary upload error:", cloudinaryError);
-  //           return res.status(500).json({
-  //             status: false,
-  //             message: "Failed to upload profile image to Cloudinary",
-  //             error: cloudinaryError.message,
-  //           });
-  //         }
-  //       }
+            // Clean up local file
+            fs.unlinkSync(filesProfile.path);
+            console.log("✅ Local profile file cleaned up");
+          } catch (cloudinaryError) {
+            console.error("❌ Cloudinary upload error:", cloudinaryError);
+            return res.status(500).json({
+              status: false,
+              message: "Failed to upload profile image to Cloudinary",
+              error: cloudinaryError.message,
+            });
+          }
+        }
 
-  //       // -------------------------------
-  //       // Upload OTHER IMAGES to Cloudinary
-  //       // -------------------------------
-  //       let uploadedOtherImages = [];
+        // -------------------------------
+        // Upload OTHER IMAGES to Cloudinary
+        // -------------------------------
+        let uploadedOtherImages = [];
 
-  //       if (filesOther.length > 0) {
-  //         for (const file of filesOther) {
-  //           console.log("📁 Other file path:", file.path);
-  //           console.log("📁 Other file exists:", fs.existsSync(file.path));
+        if (filesOther.length > 0) {
+          for (const file of filesOther) {
+            console.log("📁 Other file path:", file.path);
+            console.log("📁 Other file exists:", fs.existsSync(file.path));
 
-  //           // Check if file exists
-  //           if (!fs.existsSync(file.path)) {
-  //             // console.error("❌ Other image file not found:", file.path);
-  //             continue; // Skip this file but continue with others
-  //           }
+            // Check if file exists
+            if (!fs.existsSync(file.path)) {
+              // console.error("❌ Other image file not found:", file.path);
+              continue; // Skip this file but continue with others
+            }
 
-  //           try {
-  //             const uploadResult = await cloudinary.uploader.upload(file.path, {
-  //               folder: "population/other",
-  //             });
+            try {
+              const uploadResult = await cloudinary.uploader.upload(file.path, {
+                folder: "population/other",
+              });
 
-  //             uploadedOtherImages.push({
-  //               name: file.originalname,
-  //               image_url: uploadResult.secure_url,
-  //             });
+              uploadedOtherImages.push({
+                name: file.originalname,
+                image_url: uploadResult.secure_url,
+              });
 
-  //             // console.log("✅ Other image uploaded:", file.originalname);
+              // console.log("✅ Other image uploaded:", file.originalname);
 
-  //             // Clean up local file
-  //             fs.unlinkSync(file.path);
-  //           } catch (cloudinaryError) {
-  //             return res.status(400).json({
-  //               success: false,
-  //               message: "x Cloudinary upload error",
-  //             });
-  //             // console.error(
-  //             //   "❌ Cloudinary upload error for",
-  //             //   file.originalname,
-  //             //   ":",
-  //             //   cloudinaryError,
-  //             // );
-  //             // Continue with other files even if one fails
-  //           }
-  //         }
-  //       }
+              // Clean up local file
+              fs.unlinkSync(file.path);
+            } catch (cloudinaryError) {
+              return res.status(400).json({
+                success: false,
+                message: "x Cloudinary upload error",
+              });
+              // console.error(
+              //   "❌ Cloudinary upload error for",
+              //   file.originalname,
+              //   ":",
+              //   cloudinaryError,
+              // );
+              // Continue with other files even if one fails
+            }
+          }
+        }
 
-  //       // Save URLs to database if any images uploaded
-  //       if (uploadedOtherImages.length > 0) {
-  //         data.image_other = uploadedOtherImages;
-  //       }
+        // Save URLs to database if any images uploaded
+        if (uploadedOtherImages.length > 0) {
+          data.image_other = uploadedOtherImages;
+        }
 
-  //       // Step 1 : Check Location <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //       // Check ID
-  //       if (village_id) {
-  //         if (!mongoose.Types.ObjectId.isValid(village_id)) {
-  //           return res.status(400).json({
-  //             success: false,
-  //             message: "មិនមានទិន្នន័យក្រុម/ឃុំ!",
-  //           });
-  //         }
-  //       }
+        // Step 1 : Check Location <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        // Check ID
+        if (village_id) {
+          if (!mongoose.Types.ObjectId.isValid(village_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "មិនមានទិន្នន័យក្រុម/ឃុំ!",
+            });
+          }
+        }
 
-  //       // Get CommuneId, DistrictId, ProvinceId
-  //       var village = await modelVillage.findOne({ _id: village_id });
+        // Get CommuneId, DistrictId, ProvinceId
+        var village = await modelVillage.findOne({ _id: village_id });
 
-  //       if (!village) {
-  //         return res.status(400).json({
-  //           success: false,
-  //           message: "មិនមានទិន្នន័យក្រុម/ឃុំ!", // No village data
-  //         });
-  //       }
+        if (!village) {
+          return res.status(400).json({
+            success: false,
+            message: "មិនមានទិន្នន័យក្រុម/ឃុំ!", // No village data
+          });
+        }
 
-  //       // Step 1: Find the commune
-  //       var commune = await modelCommue.findOne({
-  //         commues_id: village.village_data.commune_id,
-  //       });
+        // Step 1: Find the commune
+        var commune = await modelCommue.findOne({
+          commues_id: village.village_data.commune_id,
+        });
 
-  //       if (!commune) {
-  //         return res.status(400).json({
-  //           success: false,
-  //           message: "មិនមានទិន្នន័យឃុំ!", // No commune data
-  //         });
-  //       }
+        if (!commune) {
+          return res.status(400).json({
+            success: false,
+            message: "មិនមានទិន្នន័យឃុំ!", // No commune data
+          });
+        }
 
-  //       // Step 2: Find the district
-  //       var district = await modelDistrict.findOne({
-  //         district_id: village.village_data.district_id,
-  //       });
+        // Step 2: Find the district
+        var district = await modelDistrict.findOne({
+          district_id: village.village_data.district_id,
+        });
 
-  //       if (!district) {
-  //         return res.status(400).json({
-  //           success: false,
-  //           message: "មិនមានទិន្នន័យតំបន់!", // No district data
-  //         });
-  //       }
+        if (!district) {
+          return res.status(400).json({
+            success: false,
+            message: "មិនមានទិន្នន័យតំបន់!", // No district data
+          });
+        }
 
-  //       // Step 3: Find the province
-  //       var province = await modelProvince.findOne({
-  //         province_id: village.village_data.province_id,
-  //       });
+        // Step 3: Find the province
+        var province = await modelProvince.findOne({
+          province_id: village.village_data.province_id,
+        });
 
-  //       if (!province) {
-  //         return res.status(400).json({
-  //           success: false,
-  //           message: "មិនមានទិន្នន័យក្រុង!", // No province data
-  //         });
-  //       }
+        if (!province) {
+          return res.status(400).json({
+            success: false,
+            message: "មិនមានទិន្នន័យក្រុង!", // No province data
+          });
+        }
 
-  //       // Result
-  //       data.province_id = province._id;
-  //       data.district_id = district._id;
-  //       data.commune_id = commune._id;
-  //       data.village_id = village_id;
+        // Result
+        data.province_id = province._id;
+        data.district_id = district._id;
+        data.commune_id = commune._id;
+        data.village_id = village_id;
 
-  //       // Step 2 : Check Education Type and ID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //       if (education_level_id) {
-  //         if (!mongoose.Types.ObjectId.isValid(education_level_id)) {
-  //           return res.status(400).json({
-  //             success: false,
-  //             message: "មិនមានទិន្នន័យកម្រិតវប្បធម៌!",
-  //           });
-  //         }
+        // Step 2 : Check Education Type and ID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if (education_level_id) {
+          if (!mongoose.Types.ObjectId.isValid(education_level_id)) {
+            return res.status(400).json({
+              success: false,
+              message: "មិនមានទិន្នន័យកម្រិតវប្បធម៌!",
+            });
+          }
 
-  //         var education_level = await modelEducation_level
-  //           .findOne({ _id: education_level_id })
-  //           .populate("education_type_id");
+          var education_level = await modelEducation_level
+            .findOne({ _id: education_level_id })
+            .populate("education_type_id");
 
-  //         if (!education_level) {
-  //           return res.status(400).json({
-  //             success: false,
-  //             message: "មិនមានទិន្នន័យកម្រិតវប្បធម៌!", // No education level data
-  //           });
-  //         }
+          if (!education_level) {
+            return res.status(400).json({
+              success: false,
+              message: "មិនមានទិន្នន័យកម្រិតវប្បធម៌!", // No education level data
+            });
+          }
 
-  //         // Result
-  //         data.education_level_id = education_level._id;
-  //         data.education_type_id = education_level.education_type_id._id;
-  //       }
+          // Result
+          data.education_level_id = education_level._id;
+          data.education_type_id = education_level.education_type_id._id;
+        }
 
-  //       // Step 3 :Job Type ID as Array [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //       // Step 3 :Job Type ID as Array [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //       if (job_name_id) {
-  //         var listData = [];
-  //         var listOfType = [];
+        // Step 3 :Job Type ID as Array [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        // Step 3 :Job Type ID as Array [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if (job_name_id) {
+          var listData = [];
+          var listOfType = [];
 
-  //         // Parse if it's a JSON string
-  //         let jobIds = job_name_id;
-  //         if (typeof job_name_id === "string") {
-  //           try {
-  //             jobIds = JSON.parse(job_name_id);
-  //           } catch (e) {
-  //             // If it's a single ID as string, wrap in array
-  //             if (job_name_id) {
-  //               jobIds = [job_name_id];
-  //             } else {
-  //               jobIds = [];
-  //             }
-  //           }
-  //         }
+          // Parse if it's a JSON string
+          let jobIds = job_name_id;
+          if (typeof job_name_id === "string") {
+            try {
+              jobIds = JSON.parse(job_name_id);
+            } catch (e) {
+              // If it's a single ID as string, wrap in array
+              if (job_name_id) {
+                jobIds = [job_name_id];
+              } else {
+                jobIds = [];
+              }
+            }
+          }
 
-  //         if (Array.isArray(jobIds) && jobIds.length > 0) {
-  //           for (let i = 0; i < jobIds.length; i++) {
-  //             // Clean the ID string
-  //             let cleanId = jobIds[i].toString();
+          if (Array.isArray(jobIds) && jobIds.length > 0) {
+            for (let i = 0; i < jobIds.length; i++) {
+              // Clean the ID string
+              let cleanId = jobIds[i].toString();
 
-  //             // Remove surrounding quotes if present
-  //             if (cleanId.startsWith('"') && cleanId.endsWith('"')) {
-  //               cleanId = cleanId.substring(1, cleanId.length - 1);
-  //             }
+              // Remove surrounding quotes if present
+              if (cleanId.startsWith('"') && cleanId.endsWith('"')) {
+                cleanId = cleanId.substring(1, cleanId.length - 1);
+              }
 
-  //             // Also remove escaped quotes
-  //             cleanId = cleanId.replace(/^\\"/, "").replace(/\\"$/, "");
+              // Also remove escaped quotes
+              cleanId = cleanId.replace(/^\\"/, "").replace(/\\"$/, "");
 
-  //             // Remove all remaining quotes
-  //             cleanId = cleanId.replace(/"/g, "");
+              // Remove all remaining quotes
+              cleanId = cleanId.replace(/"/g, "");
 
-  //             if (!mongoose.Types.ObjectId.isValid(cleanId)) {
-  //               return res.status(400).json({
-  //                 success: false,
-  //                 message: "មិនមានទិន្នន័យការងារ!",
-  //               });
-  //             }
+              if (!mongoose.Types.ObjectId.isValid(cleanId)) {
+                return res.status(400).json({
+                  success: false,
+                  message: "មិនមានទិន្នន័យការងារ!",
+                });
+              }
 
-  //             // ✅ CONVERT TO OBJECTID BEFORE PUSHING
-  //             listData.push(new mongoose.Types.ObjectId(cleanId));
-  //           }
+              // ✅ CONVERT TO OBJECTID BEFORE PUSHING
+              listData.push(new mongoose.Types.ObjectId(cleanId));
+            }
 
-  //           const jobs = await modelJobName
-  //             .find({
-  //               _id: { $in: listData }, // Now this works with ObjectIds
-  //             })
-  //             .populate("job_type_id");
+            const jobs = await modelJobName
+              .find({
+                _id: { $in: listData }, // Now this works with ObjectIds
+              })
+              .populate("job_type_id");
 
-  //           var listOfType = [];
-  //           jobs.forEach((row) => {
-  //             var isCanAdd = true;
+            var listOfType = [];
+            jobs.forEach((row) => {
+              var isCanAdd = true;
 
-  //             listOfType.forEach((item) => {
-  //               if (item.toString() === row.job_type_id._id.toString()) {
-  //                 isCanAdd = false;
-  //               }
-  //             });
+              listOfType.forEach((item) => {
+                if (item.toString() === row.job_type_id._id.toString()) {
+                  isCanAdd = false;
+                }
+              });
 
-  //             if (isCanAdd) {
-  //               listOfType.push(row.job_type_id._id);
-  //             }
-  //           });
+              if (isCanAdd) {
+                listOfType.push(row.job_type_id._id);
+              }
+            });
 
-  //           data.job_type_id = listOfType;
-  //           data.job_name_id = listData; // ✅ Now stores as ObjectIds, not strings
-  //         }
-  //       } else {
-  //         data.job_type_id = null;
-  //         data.job_name_id = null;
-  //       }
+            data.job_type_id = listOfType;
+            data.job_name_id = listData; // ✅ Now stores as ObjectIds, not strings
+          }
+        } else {
+          data.job_type_id = null;
+          data.job_name_id = null;
+        }
 
-  //       var isUnfinishConnection = true;
-  //       await post(
-  //         res,
-  //         req,
-  //         requestRequired,
-  //         data,
-  //         model,
-  //         tital_Toast,
-  //         "NA",
-  //         isUnfinishConnection,
-  //       );
+        var isUnfinishConnection = true;
+        await post(
+          res,
+          req,
+          requestRequired,
+          data,
+          model,
+          tital_Toast,
+          "NA",
+          isUnfinishConnection,
+        );
 
-  //       if (isUnfinishConnection) {
-  //         // update url
-  //         return res.send({
-  //           success: true,
-  //           message: "Member created successfully",
-  //           data: data,
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error("❌ Server error:", error);
-  //       res.status(500).json({
-  //         status: false,
-  //         message: "Server error",
-  //         error: error.message,
-  //       });
-  //     }
-  //   },
-  // );
+        if (isUnfinishConnection) {
+          // update url
+          return res.send({
+            success: true,
+            message: "Member created successfully",
+            data: data,
+          });
+        }
+      } catch (error) {
+        console.error("❌ Server error:", error);
+        res.status(500).json({
+          status: false,
+          message: "Server error",
+          error: error.message,
+        });
+      }
+    },
+  );
 
   // prop.app.get(
   //   `${urlAPI}/:id`, // optional ":id"
@@ -1931,7 +1931,6 @@ const route = (prop) => {
   //     });
   //   },
   // );
-
 
   // prop.app.get(
   //   `${urlAPI}-filter-party-sub-leader/`,
