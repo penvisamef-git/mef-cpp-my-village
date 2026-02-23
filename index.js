@@ -33,15 +33,15 @@ app.use(express.urlencoded({ extended: true }));
 // );
 
 //  ================= Connection =================
-(connectDB(),
-  app.get("/", (req, res) => {
-    api_auth(req, res, () => {
-      res.send({
-        success: true,
-        message: "API Connected",
-      });
-    });
-  }));
+// (connectDB(),
+//   app.get("/", (req, res) => {
+//     api_auth(req, res, () => {
+//       res.send({
+//         success: true,
+//         message: "API Connected",
+//       });
+//     });
+//   }));
 
 
 
