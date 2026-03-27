@@ -43,29 +43,37 @@ app.use(express.urlencoded({ extended: true }));
     });
   }));
 
-// // Prop Object
-// const prop = {
-//   app: app,
-//   jwt: jwt,
-//   api_auth: api_auth,
-//   jwt_auth: jwt_auth,
-//   request_user: request_user,
-// };
 
-// const adminAPI_V1 = require("./src/v1/admin/index.route");
-// adminAPI_V1(prop);
 
-// // app.listen(8085, "0.0.0.0", () => {
-// //   console.log(`Server is running on ${8085}`);
-// // });
-// // 🧼 Gracefully handle shutdown
-// // process.on("SIGINT", async () => {
-// //   await mongoose.connection.close();
-// //   console.log("🛑 MongoDB disconnected cleanly");
-// //   process.exit(0);
-// // });
 
-// // // Start Server
-// app.listen(PORT, () => {
-//   console.log(`Server running on http://localhost:${PORT}`);
+
+
+
+// Prop Object
+const prop = {
+  app: app,
+  jwt: jwt,
+  api_auth: api_auth,
+  jwt_auth: jwt_auth,
+  request_user: request_user,
+};
+
+const adminAPI_V1 = require("./src/v1/admin/index.route");
+adminAPI_V1(prop);
+
+// app.listen(8085, "0.0.0.0", () => {
+//   console.log(`Server is running on ${8085}`);
 // });
+// 🧼 Gracefully handle shutdown
+// process.on("SIGINT", async () => {
+//   await mongoose.connection.close();
+//   console.log("🛑 MongoDB disconnected cleanly");
+//   process.exit(0);
+// });
+
+
+
+// // Start Server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
