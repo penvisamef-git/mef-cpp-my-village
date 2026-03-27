@@ -35,10 +35,10 @@ const prop = {
 const adminAPI_V1 = require("../src/v1/admin/index.route");
 adminAPI_V1(prop);
 
-// Connect to database
-connectDB().catch((err) => {
-  console.error("Database connection failed:", err);
-});
+// // Connect to database
+// connectDB().catch((err) => {
+//   console.error("Database connection failed:", err);
+// });
 
 // Export for Vercel
 module.exports = app;
