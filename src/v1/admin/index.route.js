@@ -3,7 +3,7 @@ const index = (prop) => {
   prop.main_route = "api/v1/admin";
 
   // All Route ==========================
-  const authRoute = require("./auth/auth.route");
+  //const authRoute = require("./auth/auth.route");
   // const sessionRoute = require("./session/session.route");
   // const userRoute = require("./user/user.route");
   // const userGroupRoute = require("./user/group/group_user.route");
@@ -33,11 +33,11 @@ const index = (prop) => {
   // const ChallengeType = require("../admin/dashboard/challenge/type/type.route");
   // const ChallengeProblem = require("../admin/dashboard/challenge/problem/problem.route");
   // const GenerateQRCodeLogin = require("../qrcode/authQRCodeLogin.route");
-  const DownloadMemberCPP = require("../admin/download/member.route");
-  const Temp = require("../../temp/temp.route");
+  //const DownloadMemberCPP = require("../admin/download/member.route");
+  //const Temp = require("../../temp/temp.route");
 
   // Implement ==========================
-  authRoute(prop); // Auth
+  // authRoute(prop); // Auth
   // sessionRoute(prop); // Auth
   // userRoute(prop); // User
   // userGroupRoute(prop); // Group Permission
@@ -67,8 +67,8 @@ const index = (prop) => {
   // ChallengeType(prop);
   // ChallengeProblem(prop);
   // GenerateQRCodeLogin(prop);
-  DownloadMemberCPP(prop);
-  Temp(prop);
+  //DownloadMemberCPP(prop);
+  //Temp(prop);
 };
 
 module.exports = index;
