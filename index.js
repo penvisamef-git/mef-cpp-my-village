@@ -45,8 +45,8 @@ adminAPI_V1(prop);
 // For Vercel - export the app
 module.exports = app;
 
-// For local development - start server
-if (process.env.NODE_ENV !== "production") {
+// For local development
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
