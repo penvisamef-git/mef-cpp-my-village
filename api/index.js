@@ -1,12 +1,12 @@
 const express = require("express");
-const connectDB = require("./src/util/db");
+const connectDB = require("../src/util/db");
 const helmet = require("helmet");
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { api_auth } = require("./src/util/api_auth");
-const { jwt_auth } = require("./src/util/jwt_auth");
-const request_user = require("./src/util/request_user");
+const { api_auth } = require("../src/util/api_auth");
+const { jwt_auth } = require("../src/util/jwt_auth");
+const request_user = require("../src/util/request_user");
 
 // Middleware
 app.use(cors());
@@ -32,7 +32,7 @@ const prop = {
 };
 
 // Load routes
-const adminAPI_V1 = require("./src/v1/admin/index.route");
+const adminAPI_V1 = require("../src/v1/admin/index.route");
 adminAPI_V1(prop);
 
 // Connect to database
@@ -40,13 +40,5 @@ connectDB().catch((err) => {
   console.error("Database connection failed:", err);
 });
 
-// ✅ FOR VERCEL: Export the app (no app.listen!)
+// Export for Vercel
 module.exports = app;
-
-// ✅ FOR LOCAL DEVELOPMENT: Start server only when running locally
-if (require.main === module) {
-  const PORT = process.env.api_port || 8085;
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
