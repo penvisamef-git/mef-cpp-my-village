@@ -15,15 +15,18 @@ app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 
 // ================= Connection =================
-(connectDB(),
-  app.get("/", (req, res) => {
-    api_auth(req, res, () => {
-      res.send({
-        success: true,
-        message: "API Connected",
-      });
+// Connect to database
+connectDB();
+
+// Define routes
+app.get("/", (req, res) => {
+  api_auth(req, res, () => {
+    res.send({
+      success: true,
+      message: "API Connected",
     });
-  }));
+  });
+});
 
 // Prop Object
 const prop = {
