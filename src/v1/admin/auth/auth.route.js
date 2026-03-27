@@ -176,6 +176,40 @@ const route = (prop) => {
       },
     });
   });
+
+  prop.app.post(`${urlAPI}/logout`, prop.api_auth, async (req, res) => {
+    try {
+      const { user_id } = req.body;
+
+      if (!user_id) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is required",
+        });
+      }
+
+      // Delete the session
+      const result = await Session.deleteOne({ user_id: user_id });
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Session not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Logged out successfully",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error during logout",
+      });
+    }
+  });
 };
 
 module.exports = route;

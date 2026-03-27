@@ -1845,6 +1845,1374 @@ const route = (prop) => {
 
     return await getPagination(req.query, model, [], filters);
   }
+
+  // Get Group (with optional grouping by party_leader)
+  prop.app.get(
+    `${urlAPI}-filter-group/`,
+    prop.api_auth,
+    prop.jwt_auth,
+    prop.request_user,
+    async (req, res) => {
+      const {
+        province_id,
+        district_id,
+        commune_id,
+        village_id,
+        group_number,
+        group_by_leader, // Add this flag to determine which function to use
+      } = req.query;
+
+      try {
+        let result = {};
+
+        // Validate location ID based on which parameter is provided
+        if (village_id) {
+          if (!mongoose.Types.ObjectId.isValid(village_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "village_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          // Choose which function to use based on group_by_leader flag
+          if (group_by_leader === "true") {
+            result = await getByGroupWithLeader(
+              "village_id",
+              village_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            result = await getByGroup(
+              "village_id",
+              village_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (commune_id) {
+          if (!mongoose.Types.ObjectId.isValid(commune_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "commune_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (group_by_leader === "true") {
+            result = await getByGroupWithLeader(
+              "commune_id",
+              commune_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            result = await getByGroup(
+              "commune_id",
+              commune_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (district_id) {
+          if (!mongoose.Types.ObjectId.isValid(district_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "district_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (group_by_leader === "true") {
+            result = await getByGroupWithLeader(
+              "district_id",
+              district_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            result = await getByGroup(
+              "district_id",
+              district_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (province_id) {
+          if (!mongoose.Types.ObjectId.isValid(province_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "province_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (group_by_leader === "true") {
+            result = await getByGroupWithLeader(
+              "province_id",
+              province_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            result = await getByGroup(
+              "province_id",
+              province_id,
+              group_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        return res.status(400).send({
+          success: false,
+          message:
+            "មិនមានទិន្នន័យទីតាំង! (province_id,district_id,commune_id,village_id)",
+        });
+      } catch (e) {
+        console.error(e);
+        return res.status(500).send({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    },
+  );
+
+  async function getByGroup(
+    pin_area_name,
+    pin_area_id,
+    group_number,
+    query,
+    Model,
+    populate = [],
+    additionalFilter = [],
+  ) {
+    // Group pagination only (for the groups themselves)
+    const page = parseInt(query.page, 10) || 1;
+    const limit = parseInt(query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    // Sorting
+    const sortField = query.sort || "created_date";
+    const sortOrder = query.order === "asc" ? 1 : -1;
+
+    // Soft delete toggle
+    const includeDeleted = query.includeDeleted === "true";
+    const deleteFilter = includeDeleted ? {} : { deleted: false };
+
+    // Specific ID Filter (q_id + q_key_id)
+    const qId = query.q_id;
+    const qKeyId = query.q_key_id;
+    let specificOr = [];
+
+    if (qId && qKeyId) {
+      let ids;
+      let fields;
+
+      try {
+        ids = Array.isArray(qId) ? qId : JSON.parse(qId);
+      } catch {
+        ids = [qId];
+      }
+
+      try {
+        fields = Array.isArray(qKeyId) ? qKeyId : JSON.parse(qKeyId || "[]");
+      } catch {
+        fields = qKeyId ? qKeyId.split(",") : [];
+      }
+
+      const validObjectIds = ids
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (fields.length && validObjectIds.length) {
+        specificOr = fields.map((field) => ({
+          [field]: { $in: validObjectIds },
+        }));
+      }
+    }
+
+    // General keyword search (q + q_key)
+    const keyword = query.q?.trim();
+    const qKeys = query.q_key;
+    let generalOr = [];
+
+    if (keyword && qKeys) {
+      let fields;
+
+      try {
+        fields = Array.isArray(qKeys) ? qKeys : JSON.parse(qKeys || "[]");
+      } catch {
+        fields = qKeys ? qKeys.split(",") : [];
+      }
+
+      generalOr = fields.map((field) => {
+        if (
+          (field.endsWith("_id") && mongoose.Types.ObjectId.isValid(keyword)) ||
+          (field.endsWith("created_by_id") &&
+            mongoose.Types.ObjectId.isValid(keyword))
+        ) {
+          return { [field]: new mongoose.Types.ObjectId(keyword) };
+        }
+        return { [field]: { $regex: keyword, $options: "i" } };
+      });
+    }
+
+    const isMember = { is_member_cpp: true };
+    const is_alived = { is_alived: true };
+
+    // Compose final MongoDB filter
+    let mongoFilter = {
+      ...deleteFilter,
+      ...isMember,
+      ...is_alived,
+    };
+
+    if (specificOr.length && generalOr.length) {
+      mongoFilter.$and = [{ $or: specificOr }, { $or: generalOr }];
+    } else if (specificOr.length) {
+      mongoFilter.$or = specificOr;
+    } else if (generalOr.length) {
+      mongoFilter.$or = generalOr;
+    }
+
+    // Add additional filters like is_super_admin: false
+    if (additionalFilter.length > 0) {
+      if (mongoFilter.$and) {
+        mongoFilter.$and.push(...additionalFilter);
+      } else {
+        mongoFilter.$and = [...additionalFilter];
+      }
+    }
+
+    // Add location filter
+    mongoFilter[pin_area_name] = pin_area_id;
+
+    // IMPORTANT: First, get ALL distinct party_leader values
+    const leaders = await Model.distinct("party_leader", mongoFilter);
+
+    const groupedData = {};
+    const stats = [];
+
+    // For each leader, get ALL members without any pagination
+    for (const leader of leaders) {
+      // Create a clean filter for this specific leader
+      const leaderFilter = {
+        ...mongoFilter,
+        party_leader: leader,
+      };
+
+      // Get ALL members for this leader - NO skip, NO limit
+      const members = await Model.find(leaderFilter)
+        .sort({ [sortField]: sortOrder })
+        .populate(populate);
+
+      // Store all members in the group
+      groupedData[`group_${leader}`] = {
+        party_leader: leader,
+        data: members, // This will contain ALL members (12 for group 1)
+        pagination: {
+          total: members.length,
+          totalPages: 1, // Always 1 because we're showing all members
+          currentPage: 1,
+          pageSize: members.length, // Set to total count to show all
+        },
+      };
+
+      stats.push({
+        party_leader: leader,
+        total_users: members.length,
+      });
+    }
+
+    // Apply pagination ONLY to the groups (not to members)
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    // Convert to array for slicing, then back to object
+    const groupedArray = Object.entries(groupedData);
+    const paginatedGroups = Object.fromEntries(groupedArray.slice(start, end));
+
+    // Also paginate stats to match the groups being returned
+    const paginatedStats = stats.slice(start, end);
+
+    return {
+      data: paginatedGroups,
+      group_pagination: {
+        total_groups: leaders.length,
+        total_pages: Math.ceil(leaders.length / limit),
+        current_page: page,
+        page_size: limit,
+      },
+      group_stats: paginatedStats,
+    };
+  }
+
+  async function getByGroupWithLeader(
+    pin_area_name,
+    pin_area_id,
+    group_number,
+    query,
+    Model,
+    populate = [],
+    additionalFilter = [],
+  ) {
+    // Base location filter
+    const locationFilter = { [pin_area_name]: pin_area_id };
+
+    // Soft delete toggle
+    const includeDeleted = query.includeDeleted === "true";
+    const deleteFilter = includeDeleted ? {} : { deleted: false };
+
+    // Compose base MongoDB filter
+    const isMember = { is_member_cpp: true };
+    const is_alived = { is_alived: true };
+
+    // Start building the filter
+    let baseFilter = {
+      ...locationFilter,
+      ...deleteFilter,
+      ...isMember,
+      ...is_alived,
+    };
+
+    // Add additional filters
+    if (additionalFilter.length > 0) {
+      if (baseFilter.$and) {
+        baseFilter.$and.push(...additionalFilter);
+      } else {
+        baseFilter.$and = [...additionalFilter];
+      }
+    }
+
+    // ----- ADD SEARCH FUNCTIONALITY HERE -----
+    // Specific ID Filter (q_id + q_key_id)
+    const qId = query.q_id;
+    const qKeyId = query.q_key_id;
+    let specificOr = [];
+
+    if (qId && qKeyId) {
+      let ids;
+      let fields;
+
+      try {
+        ids = Array.isArray(qId) ? qId : JSON.parse(qId);
+      } catch {
+        ids = [qId];
+      }
+
+      try {
+        fields = Array.isArray(qKeyId) ? qKeyId : JSON.parse(qKeyId || "[]");
+      } catch {
+        fields = qKeyId ? qKeyId.split(",") : [];
+      }
+
+      const validObjectIds = ids
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (fields.length && validObjectIds.length) {
+        specificOr = fields.map((field) => ({
+          [field]: { $in: validObjectIds },
+        }));
+      }
+    }
+
+    // General keyword search (q + q_key)
+    const keyword = query.q?.trim();
+    const qKeys = query.q_key;
+    let searchFilter = {};
+
+    if (keyword) {
+      let fields = [];
+
+      // If q_key is provided, use those fields
+      if (qKeys) {
+        try {
+          fields = Array.isArray(qKeys) ? qKeys : JSON.parse(qKeys || "[]");
+        } catch {
+          fields = qKeys ? qKeys.split(",") : [];
+        }
+      } else {
+        // Default fields to search if q_key not provided
+        fields = ["firstname_kh", "lastname_kh", "firstname_en", "lastname_en"];
+      }
+
+      // Create search conditions
+      const searchConditions = fields.map((field) => {
+        // Handle ID fields
+        if (
+          (field.endsWith("_id") && mongoose.Types.ObjectId.isValid(keyword)) ||
+          (field.endsWith("created_by_id") &&
+            mongoose.Types.ObjectId.isValid(keyword))
+        ) {
+          return { [field]: new mongoose.Types.ObjectId(keyword) };
+        }
+        // Handle regular text search with regex (case insensitive)
+        return { [field]: { $regex: keyword, $options: "i" } };
+      });
+
+      searchFilter = { $or: searchConditions };
+    }
+
+    // Combine base filters with specific ID filters
+    let mongoFilter = { ...baseFilter };
+
+    if (specificOr.length) {
+      mongoFilter.$or = specificOr;
+    }
+
+    // ----- STEP 1: Find ALL members that match the search criteria -----
+    let matchingLeaders = [];
+
+    if (Object.keys(searchFilter).length > 0) {
+      // Create a filter that includes base filters AND search criteria
+      const searchMemberFilter = {
+        ...baseFilter,
+        ...searchFilter,
+      };
+
+      if (specificOr.length) {
+        searchMemberFilter.$or = specificOr;
+      }
+
+      // Find all members that match the search
+      const matchingMembers =
+        await Model.find(searchMemberFilter).distinct("party_leader");
+
+      matchingLeaders = matchingMembers.filter((leader) => leader != null);
+    }
+
+    // ----- STEP 2: Get all distinct party_leader values -----
+    let validLeaders;
+
+    if (matchingLeaders.length > 0) {
+      // If search was performed, only include leaders that have matching members
+      validLeaders = matchingLeaders;
+    } else {
+      // Otherwise, get all distinct leaders
+      const distinctLeaders = await Model.distinct("party_leader", mongoFilter);
+      validLeaders = distinctLeaders.filter((leader) => leader != null);
+    }
+
+    // Pagination parameters for groups
+    const groupPage = parseInt(query.page, 10) || 1;
+    const groupLimit = parseInt(query.limit, 10) || 10;
+    const groupSkip = (groupPage - 1) * groupLimit;
+
+    // Paginate the leaders
+    const paginatedLeaders = validLeaders.slice(
+      groupSkip,
+      groupSkip + groupLimit,
+    );
+
+    // For each leader, get ALL their users (NO PAGINATION on members)
+    const groups = {};
+    const groupStats = [];
+
+    for (const leader of paginatedLeaders) {
+      // Sorting
+      const sortField = query.sort || "created_date";
+      const sortOrder = query.order === "asc" ? 1 : -1;
+
+      // Build filter for this leader - WITHOUT the search filter
+      // This ensures we get ALL members of the group, not just matching ones
+      const leaderFilter = {
+        ...baseFilter,
+        party_leader: leader,
+      };
+
+      // Add specific ID filters if they exist
+      if (specificOr.length) {
+        leaderFilter.$or = specificOr;
+      }
+
+      // Get ALL users for this leader - NO search filter applied
+      const users = await Model.find(leaderFilter)
+        .populate("village_id")
+        .sort({ [sortField]: sortOrder })
+        .populate("role_in_party_id");
+
+      const rolePriority = {
+        "68b8fc4eeadff11c9c17b048": 1, // Top priority
+        "68b8fc55eadff11c9c17b04e": 2, // Second priority
+        "68b8fc5feadff11c9c17b054": 3,
+      };
+
+      users.sort((a, b) => {
+        const roleA = a.role_in_party_id?._id?.toString();
+        const roleB = b.role_in_party_id?._id?.toString();
+
+        // Get priority (default to high number for low priority)
+        const priorityA = rolePriority[roleA] || 999;
+        const priorityB = rolePriority[roleB] || 999;
+
+        // Sort by priority first
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        // If same priority or both have no role, sort by created_date
+        const dateA = a[sortField] ? new Date(a[sortField]) : new Date(0);
+        const dateB = b[sortField] ? new Date(b[sortField]) : new Date(0);
+
+        return sortOrder * (dateA - dateB);
+      });
+
+      groups[`group_${leader}`] = {
+        party_leader: leader,
+        data: users, // Contains ALL members of the group
+        pagination: {
+          total: users.length,
+          totalPages: 1,
+          currentPage: 1,
+          pageSize: users.length,
+        },
+      };
+
+      groupStats.push({
+        party_leader: leader,
+        total_users: users.length,
+      });
+    }
+
+    // If specific group_number is provided, return only that group
+    if (group_number && groups[`group_${group_number}`]) {
+      return {
+        success: true,
+        data: groups[`group_${group_number}`],
+      };
+    }
+
+    return {
+      success: true,
+      data: groups,
+      group_pagination: {
+        total_groups: validLeaders.length,
+        total_pages: Math.ceil(validLeaders.length / groupLimit),
+        current_page: groupPage,
+        page_size: groupLimit,
+      },
+      group_stats: groupStats,
+    };
+  }
+
+  // Get អនុសាចា ( by sub party_leader)
+  prop.app.get(
+    `${urlAPI}-filter-sub-branch/`,
+    prop.api_auth,
+    prop.jwt_auth,
+    prop.request_user,
+    async (req, res) => {
+      const {
+        province_id,
+        district_id,
+        commune_id,
+        village_id,
+        sub_branch_leader_number,
+        is_show_all_sub_branch, // Add this flag to determine which function to use
+      } = req.query;
+
+      try {
+        let result = {};
+
+        // Validate location ID based on which parameter is provided
+        if (village_id) {
+          if (!mongoose.Types.ObjectId.isValid(village_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "village_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          // Choose which function to use based on group_by_leader flag
+          if (is_show_all_sub_branch === "true") {
+            result = await getByBranchWithSub(
+              "village_id",
+              village_id,
+              sub_branch_leader_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            // result = await getByGroup(
+            //   "village_id",
+            //   village_id,
+            //   group_number,
+            //   req.query,
+            //   model,
+            //   [],
+            //   [],
+            // );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (commune_id) {
+          if (!mongoose.Types.ObjectId.isValid(commune_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "commune_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (is_show_all_sub_branch === "true") {
+            result = await getByBranchWithSub(
+              "commune_id",
+              commune_id,
+              sub_branch_leader_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            // result = await getByGroup(
+            //   "commune_id",
+            //   commune_id,
+            //   group_number,
+            //   req.query,
+            //   model,
+            //   [],
+            //   [],
+            // );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (district_id) {
+          if (!mongoose.Types.ObjectId.isValid(district_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "district_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (is_show_all_sub_branch === "true") {
+            result = await getByBranchWithSub(
+              "district_id",
+              district_id,
+              sub_branch_leader_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            // result = await getByGroup(
+            //   "district_id",
+            //   district_id,
+            //   group_number,
+            //   req.query,
+            //   model,
+            //   [],
+            //   [],
+            // );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        if (province_id) {
+          if (!mongoose.Types.ObjectId.isValid(province_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "province_id មិនត្រឹមត្រូវ!",
+            });
+          }
+
+          if (is_show_all_sub_branch === "true") {
+            result = await getByBranchWithSub(
+              "province_id",
+              province_id,
+              sub_branch_leader_number,
+              req.query,
+              model,
+              [],
+              [],
+            );
+          } else {
+            // result = await getByGroup(
+            //   "province_id",
+            //   province_id,
+            //   sub_branch_leader_number,
+            //   req.query,
+            //   model,
+            //   [],
+            //   [],
+            // );
+          }
+          return res.json({ success: true, ...result });
+        }
+
+        return res.status(400).send({
+          success: false,
+          message:
+            "មិនមានទិន្នន័យទីតាំង! (province_id,district_id,commune_id,village_id)",
+        });
+      } catch (e) {
+        console.error(e);
+        return res.status(500).send({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    },
+  );
+
+  async function getByBranchWithSub(
+    pin_area_name,
+    pin_area_id,
+    sub_branch_number,
+    query,
+    Model,
+    populate = [],
+    additionalFilter = [],
+  ) {
+    // Base location filter
+    const locationFilter = { [pin_area_name]: pin_area_id };
+
+    // Soft delete toggle
+    const includeDeleted = query.includeDeleted === "true";
+    const deleteFilter = includeDeleted ? {} : { deleted: false };
+
+    // Compose base MongoDB filter
+    const isMember = { is_member_cpp: true };
+    const is_alived = { is_alived: true };
+
+    // Start building the filter
+    let baseFilter = {
+      ...locationFilter,
+      ...deleteFilter,
+      ...isMember,
+      ...is_alived,
+    };
+
+    // Add additional filters
+    if (additionalFilter.length > 0) {
+      if (baseFilter.$and) {
+        baseFilter.$and.push(...additionalFilter);
+      } else {
+        baseFilter.$and = [...additionalFilter];
+      }
+    }
+
+    // ----- ADD SEARCH FUNCTIONALITY HERE -----
+    // Specific ID Filter (q_id + q_key_id)
+    const qId = query.q_id;
+    const qKeyId = query.q_key_id;
+    let specificOr = [];
+
+    if (qId && qKeyId) {
+      let ids;
+      let fields;
+
+      try {
+        ids = Array.isArray(qId) ? qId : JSON.parse(qId);
+      } catch {
+        ids = [qId];
+      }
+
+      try {
+        fields = Array.isArray(qKeyId) ? qKeyId : JSON.parse(qKeyId || "[]");
+      } catch {
+        fields = qKeyId ? qKeyId.split(",") : [];
+      }
+
+      const validObjectIds = ids
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (fields.length && validObjectIds.length) {
+        specificOr = fields.map((field) => ({
+          [field]: { $in: validObjectIds },
+        }));
+      }
+    }
+
+    // General keyword search (q + q_key)
+    const keyword = query.q?.trim();
+    const qKeys = query.q_key;
+    let searchFilter = {};
+
+    if (keyword) {
+      let fields = [];
+
+      // If q_key is provided, use those fields
+      if (qKeys) {
+        try {
+          fields = Array.isArray(qKeys) ? qKeys : JSON.parse(qKeys || "[]");
+        } catch {
+          fields = qKeys ? qKeys.split(",") : [];
+        }
+      } else {
+        // Default fields to search if q_key not provided
+        fields = ["firstname_kh", "lastname_kh", "firstname_en", "lastname_en"];
+      }
+
+      // Create search conditions
+      const searchConditions = fields.map((field) => {
+        // Handle ID fields
+        if (
+          (field.endsWith("_id") && mongoose.Types.ObjectId.isValid(keyword)) ||
+          (field.endsWith("created_by_id") &&
+            mongoose.Types.ObjectId.isValid(keyword))
+        ) {
+          return { [field]: new mongoose.Types.ObjectId(keyword) };
+        }
+        // Handle regular text search with regex (case insensitive)
+        return { [field]: { $regex: keyword, $options: "i" } };
+      });
+
+      searchFilter = { $or: searchConditions };
+    }
+
+    // Combine base filters with specific ID filters
+    let mongoFilter = { ...baseFilter };
+
+    if (specificOr.length) {
+      mongoFilter.$or = specificOr;
+    }
+
+    // ----- STEP 1: Find ALL members that match the search criteria -----
+    let matchingSubBranches = [];
+
+    if (Object.keys(searchFilter).length > 0) {
+      // Create a filter that includes base filters AND search criteria
+      const searchMemberFilter = {
+        ...baseFilter,
+        ...searchFilter,
+      };
+
+      if (specificOr.length) {
+        searchMemberFilter.$or = specificOr;
+      }
+
+      // Find all members that match the search and get their distinct party_sub_leader values
+      const matchingMembers =
+        await Model.find(searchMemberFilter).distinct("party_sub_leader");
+
+      matchingSubBranches = matchingMembers.filter(
+        (subBranch) => subBranch != null,
+      );
+    }
+
+    // ----- STEP 2: Get all distinct party_sub_leader values -----
+    let validSubBranches;
+
+    if (matchingSubBranches.length > 0) {
+      // If search was performed, only include sub-branches that have matching members
+      validSubBranches = matchingSubBranches;
+    } else {
+      // Otherwise, get all distinct sub-branches
+      const distinctSubBranches = await Model.distinct(
+        "party_sub_leader",
+        mongoFilter,
+      );
+      validSubBranches = distinctSubBranches.filter(
+        (subBranch) => subBranch != null,
+      );
+    }
+
+    // Pagination parameters for groups (sub-branches)
+    const groupPage = parseInt(query.page, 10) || 1;
+    const groupLimit = parseInt(query.limit, 10) || 10;
+    const groupSkip = (groupPage - 1) * groupLimit;
+
+    // Paginate the sub-branches
+    const paginatedSubBranches = validSubBranches.slice(
+      groupSkip,
+      groupSkip + groupLimit,
+    );
+
+    // For each sub-branch, get TOTAL count and LIMITED users
+    const groups = {};
+    const groupStats = [];
+
+    for (const subBranch of paginatedSubBranches) {
+      // Sorting
+      const sortField = query.sort || "created_date";
+      const sortOrder = query.order === "asc" ? 1 : -1;
+
+      // Build filter for this sub-branch
+      const subBranchFilter = {
+        ...baseFilter,
+        party_sub_leader: subBranch,
+      };
+
+      // Add specific ID filters if they exist
+      if (specificOr.length) {
+        subBranchFilter.$or = specificOr;
+      }
+
+      // ===== OPTIMIZED: Get total count and limited users in parallel =====
+      const [totalUsers, users] = await Promise.all([
+        // Get total count for this sub-branch
+        Model.countDocuments(subBranchFilter),
+
+        // Get limited users for display (with sorting)
+        Model.find(subBranchFilter)
+          .populate("village_id")
+          .sort({ [sortField]: sortOrder })
+          .populate("role_in_party_id")
+          .limit(5), // Limit to 5 users for performance
+      ]);
+
+      // Custom role priority sorting (only on the limited users)
+      const rolePriority = {
+        "68b8fc4eeadff11c9c17b048": 1, // Top priority
+        "68b8fc55eadff11c9c17b04e": 2, // Second priority
+        "68b8fc5feadff11c9c17b054": 3,
+      };
+
+      users.sort((a, b) => {
+        const roleA = a.role_in_party_id?._id?.toString();
+        const roleB = b.role_in_party_id?._id?.toString();
+
+        // Get priority (default to high number for low priority)
+        const priorityA = rolePriority[roleA] || 999;
+        const priorityB = rolePriority[roleB] || 999;
+
+        // Sort by priority first
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        // If same priority or both have no role, sort by created_date
+        const dateA = a[sortField] ? new Date(a[sortField]) : new Date(0);
+        const dateB = b[sortField] ? new Date(b[sortField]) : new Date(0);
+
+        return sortOrder * (dateA - dateB);
+      });
+
+      groups[`sub_branch_${subBranch}`] = {
+        sub_branch_number: subBranch,
+        data: users, // Contains ONLY 5 users for display
+        pagination: {
+          total: totalUsers, // Shows the REAL total count
+          totalPages: Math.ceil(totalUsers / 5), // Calculate pages based on total
+          currentPage: 1,
+          pageSize: 5, // Fixed page size
+        },
+      };
+
+      groupStats.push({
+        party_sub_leader: subBranch,
+        total_users: totalUsers, // Use the REAL total count
+      });
+    }
+
+    // If specific sub_branch_number is provided, return only that group
+    if (sub_branch_number && groups[`sub_branch_${sub_branch_number}`]) {
+      return {
+        success: true,
+        data: groups[`sub_branch_${sub_branch_number}`],
+      };
+    }
+
+    return {
+      success: true,
+      data: groups,
+      sub_branch_pagination: {
+        total_branch: validSubBranches.length,
+        total_pages: Math.ceil(validSubBranches.length / groupLimit),
+        current_page: groupPage,
+        page_size: groupLimit,
+      },
+      branch_stats: groupStats,
+    };
+  }
+
+  prop.app.get(
+    `${urlAPI}-filter-family/`,
+    prop.api_auth,
+    prop.jwt_auth,
+    prop.request_user,
+    async (req, res) => {
+      const {
+        province_id,
+        district_id,
+        commune_id,
+        village_id,
+        page = 1,
+        limit = 10,
+        sort = "created_date",
+        order = "desc",
+        includeDeleted = "false",
+        q,
+        q_key,
+        q_id,
+        q_key_id,
+      } = req.query;
+
+      try {
+        let result = {};
+
+        // Validate location ID based on which parameter is provided
+        if (village_id) {
+          if (!mongoose.Types.ObjectId.isValid(village_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "village_id មិនត្រឹមត្រូវ!",
+            });
+          }
+          result = await getByFamily(
+            "village_id",
+            village_id,
+            req.query,
+            model,
+            [],
+            [],
+          );
+          return res.json({ success: true, ...result });
+        }
+
+        if (commune_id) {
+          if (!mongoose.Types.ObjectId.isValid(commune_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "commune_id មិនត្រឹមត្រូវ!",
+            });
+          }
+          result = await getByFamily(
+            "commune_id",
+            commune_id,
+            req.query,
+            model,
+            [],
+            [],
+          );
+          return res.json({ success: true, ...result });
+        }
+
+        if (district_id) {
+          if (!mongoose.Types.ObjectId.isValid(district_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "district_id មិនត្រឹមត្រូវ!",
+            });
+          }
+          result = await getByFamily(
+            "district_id",
+            district_id,
+            req.query,
+            model,
+            [],
+            [],
+          );
+          return res.json({ success: true, ...result });
+        }
+
+        if (province_id) {
+          if (!mongoose.Types.ObjectId.isValid(province_id)) {
+            return res.status(400).send({
+              success: false,
+              message: "province_id មិនត្រឹមត្រូវ!",
+            });
+          }
+          result = await getByFamily(
+            "province_id",
+            province_id,
+            req.query,
+            model,
+            [],
+            [],
+          );
+          return res.json({ success: true, ...result });
+        }
+
+        return res.status(400).send({
+          success: false,
+          message:
+            "មិនមានទិន្នន័យទីតាំង! (province_id,district_id,commune_id,village_id)",
+        });
+      } catch (e) {
+        console.error(e);
+        return res.status(500).send({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    },
+  );
+
+  async function getByFamily(
+    pin_area_name,
+    pin_area_id,
+    query,
+    Model,
+    populate = [],
+    additionalFilter = [],
+  ) {
+    // Pagination parameters for families only
+    const page = parseInt(query.page, 10) || 1;
+    const limit = parseInt(query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    // Sorting
+    const sortField = query.sort || "created_date";
+    const sortOrder = query.order === "asc" ? 1 : -1;
+
+    // Soft delete toggle
+    const includeDeleted = query.includeDeleted === "true";
+    const deleteFilter = includeDeleted ? {} : { deleted: false };
+
+    // Base filter
+    const is_alived = { is_alived: true };
+    let baseFilter = {
+      [pin_area_name]: pin_area_id,
+      ...deleteFilter,
+      ...is_alived,
+    };
+
+    // Add additional filters
+    if (additionalFilter.length > 0) {
+      if (baseFilter.$and) {
+        baseFilter.$and.push(...additionalFilter);
+      } else {
+        baseFilter.$and = [...additionalFilter];
+      }
+    }
+
+    // ----- SEARCH FUNCTIONALITY -----
+    const qId = query.q_id;
+    const qKeyId = query.q_key_id;
+    let specificOr = [];
+
+    if (qId && qKeyId) {
+      let ids;
+      let fields;
+
+      try {
+        ids = Array.isArray(qId) ? qId : JSON.parse(qId);
+      } catch {
+        ids = [qId];
+      }
+
+      try {
+        fields = Array.isArray(qKeyId) ? qKeyId : JSON.parse(qKeyId || "[]");
+      } catch {
+        fields = qKeyId ? qKeyId.split(",") : [];
+      }
+
+      const validObjectIds = ids
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (fields.length && validObjectIds.length) {
+        specificOr = fields.map((field) => ({
+          [field]: { $in: validObjectIds },
+        }));
+      }
+    }
+
+    // General keyword search
+    const keyword = query.q?.trim();
+    const qKeys = query.q_key;
+    let searchFilter = {};
+
+    if (keyword) {
+      let fields = [];
+
+      if (qKeys) {
+        try {
+          fields = Array.isArray(qKeys) ? qKeys : JSON.parse(qKeys || "[]");
+        } catch {
+          fields = qKeys ? qKeys.split(",") : [];
+        }
+      } else {
+        fields = ["firstname_kh", "lastname_kh", "firstname_en", "lastname_en"];
+      }
+
+      const searchConditions = fields.map((field) => {
+        if (
+          (field.endsWith("_id") && mongoose.Types.ObjectId.isValid(keyword)) ||
+          (field.endsWith("created_by_id") &&
+            mongoose.Types.ObjectId.isValid(keyword))
+        ) {
+          return { [field]: new mongoose.Types.ObjectId(keyword) };
+        }
+        return { [field]: { $regex: keyword, $options: "i" } };
+      });
+
+      searchFilter = { $or: searchConditions };
+    }
+
+    // Combine filters
+    let mongoFilter = { ...baseFilter };
+
+    if (specificOr.length) {
+      mongoFilter.$or = specificOr;
+    }
+
+    // ----- STEP 1: Find ALL distinct family_system_number values -----
+    let familyNumbers = [];
+
+    if (Object.keys(searchFilter).length > 0) {
+      const searchMemberFilter = {
+        ...baseFilter,
+        ...searchFilter,
+      };
+
+      if (specificOr.length) {
+        searchMemberFilter.$or = specificOr;
+      }
+
+      const matchingMembers = await Model.find(searchMemberFilter).distinct(
+        "family_system_number",
+      );
+      familyNumbers = matchingMembers.filter(
+        (num) => num != null && num !== "",
+      );
+    } else {
+      const allFamilyNumbers = await Model.distinct(
+        "family_system_number",
+        mongoFilter,
+      );
+      familyNumbers = allFamilyNumbers.filter(
+        (num) => num != null && num !== "",
+      );
+    }
+
+    // Custom sorting function for family numbers
+    familyNumbers.sort((a, b) => {
+      // Check if both are numbers
+      const aIsNumber = /^\d+$/.test(a);
+      const bIsNumber = /^\d+$/.test(b);
+
+      if (aIsNumber && bIsNumber) {
+        // Both are numbers - sort numerically
+        return parseInt(a, 10) - parseInt(b, 10);
+      } else if (aIsNumber && !bIsNumber) {
+        // Numbers come before non-numbers
+        return -1;
+      } else if (!aIsNumber && bIsNumber) {
+        // Non-numbers come after numbers
+        return 1;
+      } else {
+        // Both are non-numbers - sort alphabetically by string
+        // But make sure UUIDs (containing dashes) come last
+        const aIsUUID = a.includes("-") && a.length > 30;
+        const bIsUUID = b.includes("-") && b.length > 30;
+
+        if (aIsUUID && !bIsUUID) {
+          return 1;
+        } else if (!aIsUUID && bIsUUID) {
+          return -1;
+        } else {
+          return a.localeCompare(b, "km");
+        }
+      }
+    });
+
+    // Paginate the families
+    const paginatedFamilies = familyNumbers.slice(skip, skip + limit);
+
+    // For each family, get ALL their members
+    const families = {};
+    const familyStats = [];
+
+    for (let i = 0; i < paginatedFamilies.length; i++) {
+      const familyNumber = paginatedFamilies[i];
+      const familyIndex = i + 1 + skip;
+
+      const familyFilter = {
+        ...baseFilter,
+        family_system_number: familyNumber,
+      };
+
+      if (specificOr.length) {
+        familyFilter.$or = specificOr;
+      }
+
+      let users = await Model.find(familyFilter)
+        .populate(populate)
+        .sort({ [sortField]: sortOrder })
+        .populate("role_in_party_id")
+        .populate("village_id");
+
+      // Sort by role priority
+      const rolePriority = {
+        "68b8fc4eeadff11c9c17b048": 1,
+        "68b8fc55eadff11c9c17b04e": 2,
+        "68b8fc5feadff11c9c17b054": 3,
+      };
+
+      users.sort((a, b) => {
+        const roleA = a.role_in_party_id?._id?.toString();
+        const roleB = b.role_in_party_id?._id?.toString();
+
+        const priorityA = rolePriority[roleA] || 999;
+        const priorityB = rolePriority[roleB] || 999;
+
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        const dateA = a[sortField] ? new Date(a[sortField]) : new Date(0);
+        const dateB = b[sortField] ? new Date(b[sortField]) : new Date(0);
+
+        return sortOrder * (dateA - dateB);
+      });
+
+      // Store family data with original family_system_number
+      families[`family_${familyIndex}`] = {
+        family_system_number: familyNumber, // Keep the original value
+        total_members: users.length,
+        data: users,
+      };
+
+      familyStats.push({
+        family_system_number: familyNumber, // Keep the original value
+        family_index: familyIndex,
+        total_members: users.length,
+      });
+    }
+
+    return {
+      data: families,
+      family_pagination: {
+        total_families: familyNumbers.length,
+        total_pages: Math.ceil(familyNumbers.length / limit),
+        current_page: page,
+        page_size: limit,
+      },
+      family_stats: familyStats,
+    };
+  }
 };
 
 module.exports = route;

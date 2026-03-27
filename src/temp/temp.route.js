@@ -1,8 +1,8 @@
 const { userInfo } = require("./folder/user");
 const mongoose = require("mongoose");
-const modelPartPeople = require("../v1/admin/dashboard/area_management/party_member/party_member.model");
-const modelJobName = require("../v1/admin/dashboard/master_data/job/job_name/job.model");
-const modelEducationLevel = require("../v1/admin/dashboard/master_data/education/education_level/education_level.model");
+const modelPartPeople = require("./../v1/admin/dashboard/area_management/party_member/party_member.model");
+const modelJobName = require("./../v1/admin/dashboard/master_data/job/job_name/job.model");
+const modelEducationLevel = require("./../v1/admin/dashboard/master_data/education/education_level/education_level.model");
 
 const index = (prop) => {
   const baseRoute = "/api/temporary";
